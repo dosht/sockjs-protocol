@@ -77,6 +77,38 @@ def old_POST_async(url, **kwargs):
     return HttpResponse('POST', url, async=True, **kwargs)
 
 
+class TimeoutException(Exception): pass
+
+
+class WebSocektRFC6455(object):
+
+    def __init__(self, url):
+        self.ws = WebSocketClient(url)
+        self.queue = Queue.Queue()
+        def onmessage(m):
+            print "received: %s" % m
+            self.queue.put(unicode(str(m), 'utf-8'))
+
+        self.ws.received_message = onmessage
+
+    def connect(self):
+        self.ws.connect()
+        return self
+
+    def send(self, msg):
+        self.ws.send(msg)
+        return self
+
+    def recv(self, timeout=1.0):
+        try:
+            return self.queue.get(timeout=timeout)
+        except Queue.Empty:
+            raise TimeoutException("websocket didn't receive any thing")
+
+    def close(self):
+        self.ws.close()
+
+
 class WebSocket8Client(object):
     class ConnectionClosedException(Exception): pass
 
@@ -174,7 +206,7 @@ class Response(object):
 class RawHttpConnection(object):
     def __init__(self, url):
         u = urlparse.urlparse(url)
-        self.s = socket.create_connection((u.hostname, u.port), timeout=1)
+        self.s = socket.create_connection((u.hostname, u.port), timeout=3)
 
     def request(self, method, url, headers={}, body=None, timeout=1, http="1.1"):
         headers = CaseInsensitiveDict(headers)

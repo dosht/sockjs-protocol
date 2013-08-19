@@ -21,6 +21,7 @@ import unittest2 as unittest
 from utils_03 import GET, GET_async, POST, POST_async, OPTIONS, old_POST_async
 from utils_03 import WebSocket8Client
 from utils_03 import RawHttpConnection
+from utils_03 import WebSocektRFC6455
 import uuid
 
 
@@ -518,6 +519,23 @@ class WebsocketHttpErrors(Test):
                   {}]:
             r = POST(base_url + '/0/0/websocket', headers=h)
             self.verify405(r)
+
+
+class WebsocketRFC6455(Test):
+    def test_transport(self):
+        ws_url = 'ws:' + base_url.split(':',1)[1] + \
+                 '/000/' + str(uuid.uuid4()) + '/websocket'
+        ws = WebSocektRFC6455(ws_url).connect()
+        self.assertEqual(ws.recv(), u'o')
+        ws.send(u'["a"]')
+        self.assertEqual(ws.recv(), u'a["a"]')
+#        ws.close()
+
+    def test_close(self):
+        pass
+
+    def test_broken_json(self):
+        pass
 
 
 # Support WebSocket Hixie-76 protocol
